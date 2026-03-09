@@ -38,13 +38,13 @@ tests:
           value: Deployment
         equal:
           path: spec.template.spec.containers[0].securityContext.runAsUser
-          value: 20030
+          value: 20031
       - documentSelector:
           path: kind
           value: Deployment
         equal:
           path: spec.template.spec.containers[0].securityContext.runAsGroup
-          value: 20030
+          value: 20031
       - documentSelector:
           path: kind
           value: PersistentVolumeClaim

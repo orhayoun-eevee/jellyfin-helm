@@ -34,10 +34,12 @@ workload:
       logging.kubernetes.io/service: jellyfin
 
     podSecurityContext:
-      fsGroup: 20030
+      fsGroup: 20031
       fsGroupChangePolicy: OnRootMismatch
       runAsNonRoot: true
-      supplementalGroups: []
+      supplementalGroups:
+        - 1010
+        - 1003
 
     containers:
       jellyfin:
@@ -94,8 +96,8 @@ workload:
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
-          runAsUser: 20030
-          runAsGroup: 20030
+          runAsUser: 20031
+          runAsGroup: 20031
           allowPrivilegeEscalation: false
           privileged: false
           appArmorProfile:
