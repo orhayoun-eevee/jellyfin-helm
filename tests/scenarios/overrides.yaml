@@ -1,0 +1,19 @@
+# Scenario: override operational knobs while keeping full feature set enabled.
+network:
+  services:
+    items:
+      http:
+        type: NodePort
+        ports:
+          http:
+            port: 8181
+
+workload:
+  spec:
+    replicas: 2
+    podSecurityContext:
+      fsGroup: 2000
+    containers:
+      jellyfin:
+        securityContext:
+          runAsUser: 2001

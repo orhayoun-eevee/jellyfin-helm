@@ -1,0 +1,380 @@
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: jellyfin-default
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: network-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+      app.kubernetes.io/instance: test-release
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: istio-system
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: shared-platform-gateway
+      ports:
+      - port: 15008
+        protocol: TCP
+  egress:
+    - ports:
+      - port: 53
+        protocol: UDP
+      - port: 53
+        protocol: TCP
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: kube-system
+        podSelector:
+          matchLabels:
+            k8s-app: kube-dns
+    - ports:
+      - port: 15008
+        protocol: TCP
+      to:
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: istio-system
+    - ports:
+      - port: 80
+        protocol: TCP
+      - port: 443
+        protocol: TCP
+      to:
+      - ipBlock:
+          cidr: 0.0.0.0/0
+          except:
+          - 10.42.0.0/16
+          - 10.43.0.0/16
+          - 192.168.0.0/16
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jellyfin
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: serviceaccount
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+  annotations:
+    description: Jellyfin media center service account
+automountServiceAccountToken: false
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jellyfin-config
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: pvc
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin-http
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: service-http
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+  annotations:
+    description: Jellyfin HTTP service
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8096
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/instance: test-release
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: deployment
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+      app.kubernetes.io/instance: test-release
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: deployment
+        app.kubernetes.io/instance: test-release
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: jellyfin
+        app.kubernetes.io/version: 10.10.7
+        helm.sh/chart: jellyfin-0.0.1
+        app.kubernetes.io/part-of: media-center
+        logging.kubernetes.io/component: media-center
+        logging.kubernetes.io/service: jellyfin
+    spec:
+      
+      terminationGracePeriodSeconds: 60
+      securityContext:
+        fsGroup: 20030
+        fsGroupChangePolicy: OnRootMismatch
+        runAsNonRoot: true
+        supplementalGroups: []
+      serviceAccountName: jellyfin
+      nodeSelector:
+        kubernetes.io/os: linux
+      dnsPolicy: ClusterFirst
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      containers:
+        - name: jellyfin
+          image: jellyfin/jellyfin:10.10.7@sha256:7ae36aab93ef9b6aaff02b37f8bb23df84bb2d7a3f6054ec8fc466072a648ce2
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8096
+              protocol: TCP
+          env:
+            - name: TZ
+              value: UTC
+          volumeMounts:
+            - mountPath: /config
+              name: config
+            - mountPath: /cache
+              name: cache
+            - mountPath: /tmp
+              name: tmp
+          resources:
+            limits:
+              cpu: 2000m
+              ephemeral-storage: 4Gi
+              memory: 4Gi
+            requests:
+              cpu: 250m
+              ephemeral-storage: 1Gi
+              memory: 1Gi
+          livenessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 5
+          readinessProbe:
+            failureThreshold: 3
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 5
+          startupProbe:
+            failureThreshold: 30
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            tcpSocket:
+              port: http
+            timeoutSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            appArmorProfile:
+              type: RuntimeDefault
+            capabilities:
+              drop:
+              - ALL
+            privileged: false
+            readOnlyRootFilesystem: true
+            runAsGroup: 20030
+            runAsNonRoot: true
+            runAsUser: 20030
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: jellyfin-config
+        - emptyDir:
+            sizeLimit: 4Gi
+          name: cache
+        - emptyDir:
+            sizeLimit: 1Gi
+          name: tmp
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: jellyfin-ingress
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: authorization-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+      app.kubernetes.io/instance: test-release
+  action: ALLOW
+  rules:
+    - from:
+      - source:
+          principals:
+          - cluster.local/ns/istio-system/sa/shared-platform-gateway-istio
+      to:
+      - operation:
+          ports:
+          - "8096"
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: jellyfin
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: destination-rule
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+spec:
+  host: jellyfin-http
+  trafficPolicy:
+    connectionPool:
+      http:
+        http1MaxPendingRequests: 10
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 2
+      tcp:
+        maxConnections: 100
+    outlierDetection:
+      baseEjectionTime: 30s
+      consecutive5xxErrors: 5
+      interval: 30s
+      maxEjectionPercent: 50
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jellyfin-route
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: http-route
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+spec:
+  parentRefs:
+    - name: shared-platform-gateway
+      namespace: istio-system
+      kind: Gateway
+      group: gateway.networking.k8s.io
+      sectionName: https
+  hostnames:
+    - jellyfin-k8s.orhayoun.com
+  rules:
+    - backendRefs:
+      - group: ""
+        kind: Service
+        name: jellyfin-http
+        port: 8096
+        weight: 100
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: jellyfin-http-redirect
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: http-route
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.1
+spec:
+  parentRefs:
+    - name: shared-platform-gateway
+      namespace: istio-system
+      kind: Gateway
+      group: gateway.networking.k8s.io
+      sectionName: http
+  hostnames:
+    - jellyfin-k8s.orhayoun.com
+  rules:
+    - filters:
+      - requestRedirect:
+          scheme: https
+          statusCode: 301
+        type: RequestRedirect
+      matches:
+      - path:
+          type: PathPrefix
+          value: /

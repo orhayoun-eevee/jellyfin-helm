@@ -1,0 +1,70 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "dependencyDashboard": true,
+  "labels": ["dependencies", "renovate"],
+  "rangeStrategy": "replace",
+  "rebaseWhen": "behind-base-branch",
+  "prConcurrentLimit": 5,
+  "prHourlyLimit": 2,
+  "automerge": false,
+  "platformAutomerge": true,
+  "enabledManagers": ["github-actions", "helmv3", "custom.regex"],
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "groupName": "github actions",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch", "minor"]
+    },
+    {
+      "matchManagers": ["helmv3"],
+      "groupName": "helm dependencies",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch", "minor"]
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchDatasources": ["docker"],
+      "groupName": "container images",
+      "pinDigests": true,
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch", "minor"]
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchDepTypes": ["workflow-version"],
+      "groupName": "build-workflow releases",
+      "automerge": true,
+      "automergeType": "pr",
+      "matchUpdateTypes": ["digest", "pin", "pinDigest", "patch", "minor"]
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/values\\.ya?ml$/"],
+      "matchStrings": [
+        "repository:\\s*(?<depName>[^\\s]+)\\s*\\n\\s*tag:\\s*\\\"?(?<currentValue>[^\\\"@\\s]+)(?:@(?<currentDigest>sha256:[a-f0-9]+))?\\\"?"
+      ],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/.github/workflows/.*\\.ya?ml$/"],
+      "matchStrings": [
+        "uses:\\s*orhayoun-eevee/build-workflow/.github/workflows/[^@\\s]+@(?<currentValue>v\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "orhayoun-eevee/build-workflow",
+      "datasourceTemplate": "github-tags",
+      "depTypeTemplate": "workflow-version"
+    }
+  ]
+}

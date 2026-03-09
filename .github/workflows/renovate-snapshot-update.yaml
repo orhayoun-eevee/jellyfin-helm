@@ -1,0 +1,27 @@
+name: Renovate Snapshot Update
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+    paths:
+      - "values.yaml"
+
+permissions:
+  contents: write
+  packages: read
+
+concurrency:
+  group: renovate-snapshot-update-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-snapshots:
+    if: github.actor == 'renovate[bot]' && github.event.pull_request.user.login == 'renovate[bot]' && github.event.pull_request.head.repo.full_name == github.repository
+    uses: orhayoun-eevee/build-workflow/.github/workflows/renovate-snapshot-update.yaml@v0.1.21
+    with:
+      snapshots_dir: tests/snapshots
+    secrets:
+      gh_app_id: ${{ secrets.GHCR_AUTO_APP_ID }}
+      gh_app_private_key: ${{ secrets.GHCR_AUTO_PKEY }}

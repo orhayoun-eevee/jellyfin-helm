@@ -1,0 +1,12 @@
+# Minimal scenario: disables optional networking/monitoring features for baseline rendering.
+network:
+  httpRoute:
+    enabled: false
+  networkPolicy:
+    items:
+      default:
+        enabled: false
+  istio:
+    enabled: false
+metrics:
+  enabled: false

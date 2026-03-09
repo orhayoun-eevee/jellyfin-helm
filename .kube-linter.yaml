@@ -1,0 +1,19 @@
+checks:
+  doNotAutoAddDefaults: false
+  include:
+    - no-liveness-probe
+    - no-readiness-probe
+    - no-rolling-update-strategy
+    - default-service-account
+    - non-isolated-pod
+    - minimum-three-replicas
+    - cluster-admin-role-binding
+    - access-to-secrets
+    - read-secret-from-env-var
+  exclude:
+    # Home media deployment intentionally uses one replica.
+    - minimum-three-replicas
+    # Stateful media upgrades are intentionally serialized.
+    - no-rolling-update-strategy
+    # Seerr DB credentials are intentionally sourced via Secret env vars.
+    - read-secret-from-env-var

@@ -1,0 +1,24 @@
+name: Validate Renovate Config
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'renovate.json'
+      - 'renovate.json5'
+      - '.github/renovate.json'
+      - '.github/renovate.json5'
+      - '.github/workflows/renovate-config.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: renovate-config-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    uses: orhayoun-eevee/build-workflow/.github/workflows/renovate-config.yaml@v0.1.21
