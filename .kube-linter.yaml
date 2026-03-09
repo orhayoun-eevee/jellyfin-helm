@@ -15,5 +15,3 @@ checks:
     - minimum-three-replicas
     # Stateful media upgrades are intentionally serialized.
     - no-rolling-update-strategy
-    # Seerr DB credentials are intentionally sourced via Secret env vars.
-    - read-secret-from-env-var
