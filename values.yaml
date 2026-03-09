@@ -1,0 +1,311 @@
+# Default values for jellyfin
+# Uses lib-chart workload model (0.0.13)
+
+# ----------------------------------------------------------------------------
+# Global Configuration
+# ----------------------------------------------------------------------------
+global:
+  name: jellyfin
+  namespace: media-center
+  chart:
+    appVersion: 10.10.7
+  labels: {}
+
+# ----------------------------------------------------------------------------
+# Workload Configuration
+# ----------------------------------------------------------------------------
+workload:
+  type: deployment
+  spec:
+    replicas: 1
+    strategy:
+      type: Recreate
+    revisionHistoryLimit: 3
+    terminationGracePeriodSeconds: 60
+    dnsPolicy: ClusterFirst
+    enableServiceLinks: false
+    automountServiceAccountToken: false
+    nodeSelector:
+      kubernetes.io/os: linux
+
+    podLabels:
+      app.kubernetes.io/part-of: media-center
+      logging.kubernetes.io/component: media-center
+      logging.kubernetes.io/service: jellyfin
+
+    podSecurityContext:
+      fsGroup: 20030
+      fsGroupChangePolicy: OnRootMismatch
+      runAsNonRoot: true
+      supplementalGroups: []
+
+    containers:
+      jellyfin:
+        enabled: true
+        image:
+          repository: jellyfin/jellyfin
+          tag: "10.10.7@sha256:7ae36aab93ef9b6aaff02b37f8bb23df84bb2d7a3f6054ec8fc466072a648ce2"
+          pullPolicy: Always
+
+        env:
+          - name: TZ
+            value: "UTC"
+
+        ports:
+          - containerPort: 8096
+            name: http
+            protocol: TCP
+
+        volumeMounts:
+          - name: config
+            mountPath: /config
+          - name: cache
+            mountPath: /cache
+          - name: tmp
+            mountPath: /tmp
+
+        livenessProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+
+        readinessProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 3
+          initialDelaySeconds: 20
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+
+        startupProbe:
+          tcpSocket:
+            port: http
+          failureThreshold: 30
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 20030
+          runAsGroup: 20030
+          allowPrivilegeEscalation: false
+          privileged: false
+          appArmorProfile:
+            type: RuntimeDefault
+          capabilities:
+            drop:
+              - ALL
+          seccompProfile:
+            type: RuntimeDefault
+
+        resources:
+          requests:
+            cpu: 250m
+            memory: 1Gi
+            ephemeral-storage: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+            ephemeral-storage: 4Gi
+
+# ----------------------------------------------------------------------------
+# Service Configuration
+# ----------------------------------------------------------------------------
+network:
+  enabled: true
+  services:
+    enabled: true
+    items:
+      http:
+        enabled: true
+        type: ClusterIP
+        ports:
+          http:
+            port: 8096
+            targetPort: http
+            protocol: TCP
+        annotations:
+          description: "Jellyfin HTTP service"
+
+  httpRoute:
+    enabled: true
+    port: 8096
+    host: jellyfin-k8s.orhayoun.com
+    gateway:
+      name: shared-platform-gateway
+      namespace: istio-system
+    routes:
+      - name: route
+        enabled: true
+        listener:
+          sectionName: https
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+            backendRefs:
+              - name: jellyfin-http
+                port: 8096
+                weight: 100
+                group: ""
+                kind: Service
+      - name: http-redirect
+        enabled: true
+        listener:
+          sectionName: http
+        rules:
+          - matches:
+              - path:
+                  type: PathPrefix
+                  value: /
+            filters:
+              - type: RequestRedirect
+                requestRedirect:
+                  scheme: https
+                  statusCode: 301
+
+  networkPolicy:
+    enabled: true
+    items:
+      default:
+        enabled: true
+        policyTypes:
+          - Ingress
+          - Egress
+        ingress:
+          - from:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: istio-system
+                podSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: shared-platform-gateway
+            ports:
+              - protocol: TCP
+                port: 15008
+        egress:
+          - to:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: kube-system
+                podSelector:
+                  matchLabels:
+                    k8s-app: kube-dns
+            ports:
+              - protocol: UDP
+                port: 53
+              - protocol: TCP
+                port: 53
+
+          - to:
+              - namespaceSelector:
+                  matchLabels:
+                    kubernetes.io/metadata.name: istio-system
+            ports:
+              - protocol: TCP
+                port: 15008
+
+          - to:
+              - ipBlock:
+                  cidr: "0.0.0.0/0"
+                  except:
+                    - "10.42.0.0/16"
+                    - "10.43.0.0/16"
+                    - "192.168.0.0/16"
+            ports:
+              - protocol: TCP
+                port: 80
+              - protocol: TCP
+                port: 443
+
+  istio:
+    enabled: true
+    authorizationPolicy:
+      enabled: true
+      items:
+        ingress:
+          enabled: true
+          action: ALLOW
+          rules:
+            - from:
+                - source:
+                    principals:
+                      - "cluster.local/ns/istio-system/sa/shared-platform-gateway-istio"
+              to:
+                - operation:
+                    ports: ["8096"]
+    destinationRule:
+      enabled: true
+      host: jellyfin-http
+      trafficPolicy:
+        connectionPool:
+          tcp:
+            maxConnections: 100
+          http:
+            http1MaxPendingRequests: 10
+            http2MaxRequests: 100
+            maxRequestsPerConnection: 2
+        outlierDetection:
+          consecutive5xxErrors: 5
+          interval: 30s
+          baseEjectionTime: 30s
+          maxEjectionPercent: 50
+
+# ----------------------------------------------------------------------------
+# Feature: Persistence
+# ----------------------------------------------------------------------------
+persistence:
+  enabled: true
+  claims:
+    config:
+      size: 10Gi
+      storageClass: longhorn
+      accessMode: ReadWriteOnce
+      retain: true
+  volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: jellyfin-config
+    - name: cache
+      emptyDir:
+        sizeLimit: 4Gi
+    - name: tmp
+      emptyDir:
+        sizeLimit: 1Gi
+
+# ----------------------------------------------------------------------------
+# Feature: Observability
+# ----------------------------------------------------------------------------
+metrics:
+  enabled: false
+  # TODO: Implement Jellyfin metrics stack (exporter/serviceMonitor/prometheusRule/grafana)
+  # in a follow-up change once a supported exporter path is selected.
+
+# ----------------------------------------------------------------------------
+# Service Account
+# ----------------------------------------------------------------------------
+serviceAccount:
+  create: true
+  name: "jellyfin"
+  automount: false
+  annotations:
+    description: "Jellyfin media center service account"
+
+# ----------------------------------------------------------------------------
+# Pod Disruption Budget
+# ----------------------------------------------------------------------------
+podDisruptionBudget:
+  enabled: false
+  minAvailable: 1
+  unhealthyPodEvictionPolicy: AlwaysAllow
+
+# TODO: Revisit backup volume strategy and add media-library mount examples if needed.

@@ -1,0 +1,147 @@
+suite: jellyfin chart contract
+templates:
+  - templates/all.yaml
+tests:
+  - it: renders expected default resource set and ingress host
+    asserts:
+      - hasDocuments:
+          count: 9
+      - documentSelector:
+          path: metadata.name
+          value: jellyfin-route
+        equal:
+          path: spec.hostnames[0]
+          value: jellyfin-k8s.orhayoun.com
+      - documentSelector:
+          path: kind
+          value: DestinationRule
+        equal:
+          path: spec.host
+          value: jellyfin-http
+
+  - it: wires jellyfin application container security and pvc correctly
+    asserts:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].name
+          value: jellyfin
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].securityContext.readOnlyRootFilesystem
+          value: true
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 20030
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].securityContext.runAsGroup
+          value: 20030
+      - documentSelector:
+          path: kind
+          value: PersistentVolumeClaim
+        equal:
+          path: metadata.name
+          value: jellyfin-config
+
+  - it: keeps minimal scenario render compact and deterministic
+    values:
+      - scenarios/minimal.yaml
+    asserts:
+      - hasDocuments:
+          count: 4
+
+  - it: disables destination rule when explicitly turned off
+    set:
+      network:
+        istio:
+          destinationRule:
+            enabled: false
+    asserts:
+      - hasDocuments:
+          count: 8
+
+  - it: applies httproute host override
+    set:
+      network:
+        httpRoute:
+          host: jellyfin.example.internal
+    asserts:
+      - documentSelector:
+          path: metadata.name
+          value: jellyfin-route
+        equal:
+          path: spec.hostnames[0]
+          value: jellyfin.example.internal
+
+  - it: applies destination rule host override
+    set:
+      network:
+        istio:
+          destinationRule:
+            host: jellyfin-custom-http
+    asserts:
+      - documentSelector:
+          path: kind
+          value: DestinationRule
+        equal:
+          path: spec.host
+          value: jellyfin-custom-http
+
+  - it: applies explicit jellyfin image override for controlled rollouts
+    set:
+      workload:
+        spec:
+          containers:
+            jellyfin:
+              image:
+                repository: registry.internal/jellyfin
+                tag: ci-test
+    asserts:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].image
+          value: registry.internal/jellyfin:ci-test
+
+  - it: keeps jellyfin networking and probes wired to stable defaults
+    asserts:
+      - documentSelector:
+          path: metadata.name
+          value: jellyfin-http
+        equal:
+          path: spec.ports[0].port
+          value: 8096
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].livenessProbe.tcpSocket.port
+          value: http
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].readinessProbe.tcpSocket.port
+          value: http
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.volumes[0].persistentVolumeClaim.claimName
+          value: jellyfin-config
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].imagePullPolicy
+          value: Always

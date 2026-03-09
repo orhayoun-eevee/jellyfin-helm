@@ -1,0 +1,41 @@
+name: PR Required Checks
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'AGENTS.md'
+      - '.gitignore'
+      - '.editorconfig'
+      - 'LICENSE'
+  merge_group:
+    types:
+      - checks_requested
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-required-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci-required:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      packages: read
+    uses: orhayoun-eevee/build-workflow/.github/workflows/pr-required-checks-chart.yaml@v0.1.21
+    with:
+      chart_kind: app
+    secrets:
+      gh_app_id: ${{ secrets.GHCR_AUTO_APP_ID }}
+      gh_app_private_key: ${{ secrets.GHCR_AUTO_PKEY }}

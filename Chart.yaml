@@ -1,0 +1,17 @@
+apiVersion: v2
+name: jellyfin
+description: A Helm chart for Jellyfin using lib-chart
+type: application
+version: 0.0.1
+appVersion: "10.10.7"
+keywords:
+  - jellyfin
+  - media-center
+  - streaming
+dependencies:
+  - name: lib-chart
+    version: "0.0.13"
+    repository: "oci://ghcr.io/orhayoun-eevee"
+maintainers:
+  - name: Jellyfin Team
+home: https://github.com/jellyfin/jellyfin

@@ -1,0 +1,77 @@
+suite: jellyfin workload overrides
+templates:
+  - templates/all.yaml
+tests:
+  - it: applies deployment replica override
+    set:
+      workload:
+        spec:
+          replicas: 2
+    asserts:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.replicas
+          value: 2
+
+  - it: applies pod security context fsGroup override
+    set:
+      workload:
+        spec:
+          podSecurityContext:
+            fsGroup: 2000
+    asserts:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 2000
+
+  - it: applies persistence pvc size override
+    set:
+      persistence:
+        claims:
+          config:
+            size: 10Gi
+    asserts:
+      - documentSelector:
+          path: metadata.name
+          value: jellyfin-config
+        equal:
+          path: spec.resources.requests.storage
+          value: 10Gi
+
+  - it: applies container cpu limit override
+    set:
+      workload:
+        spec:
+          containers:
+            jellyfin:
+              resources:
+                limits:
+                  cpu: 750m
+    asserts:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 750m
+
+  - it: applies container security context runAsUser override
+    set:
+      workload:
+        spec:
+          containers:
+            jellyfin:
+              securityContext:
+                runAsUser: 2001
+    asserts:
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 2001
