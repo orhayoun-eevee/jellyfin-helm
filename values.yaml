@@ -44,7 +44,7 @@ workload:
         enabled: true
         image:
           repository: jellyfin/jellyfin
-          tag: "10.10.7@sha256:7ae36aab93ef9b6aaff02b37f8bb23df84bb2d7a3f6054ec8fc466072a648ce2"
+          tag: "10.11.6@sha256:333b647716631443a43c7fabac4b0c46b4e2f036bad19547e00958f10f721b85"
           pullPolicy: Always
 
         env:
