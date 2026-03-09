@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.2
+    helm.sh/chart: jellyfin-0.0.3
   annotations:
     description: Jellyfin media center service account
 automountServiceAccountToken: false
@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.2
+    helm.sh/chart: jellyfin-0.0.3
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -51,7 +51,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.2
+    helm.sh/chart: jellyfin-0.0.3
   annotations:
     description: Jellyfin HTTP service
 spec:
@@ -77,7 +77,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.2
+    helm.sh/chart: jellyfin-0.0.3
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -95,7 +95,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: jellyfin
         app.kubernetes.io/version: 10.10.7
-        helm.sh/chart: jellyfin-0.0.2
+        helm.sh/chart: jellyfin-0.0.3
         app.kubernetes.io/part-of: media-center
         logging.kubernetes.io/component: media-center
         logging.kubernetes.io/service: jellyfin
@@ -103,10 +103,12 @@ spec:
       
       terminationGracePeriodSeconds: 60
       securityContext:
-        fsGroup: 20030
+        fsGroup: 20031
         fsGroupChangePolicy: OnRootMismatch
         runAsNonRoot: true
-        supplementalGroups: []
+        supplementalGroups:
+        - 1010
+        - 1003
       serviceAccountName: jellyfin
       nodeSelector:
         kubernetes.io/os: linux
@@ -173,9 +175,9 @@ spec:
               - ALL
             privileged: false
             readOnlyRootFilesystem: true
-            runAsGroup: 20030
+            runAsGroup: 20031
             runAsNonRoot: true
-            runAsUser: 20030
+            runAsUser: 20031
             seccompProfile:
               type: RuntimeDefault
       volumes:

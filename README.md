@@ -75,7 +75,7 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 ## App-Specific Notes
 
 - Namespace: `media-center`
-- Main container runs as UID/GID `20030/20030`
+- Main container runs as UID/GID `20031/20031`
 - Config PVC claim: `jellyfin-config` (RWO)
 - Image tag is pinned by digest for immutable deploys
 - Default service port: `8096`
@@ -91,6 +91,7 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 
 - Implement Jellyfin metrics stack (exporter + `ServiceMonitor` + `PrometheusRule` + dashboard wiring).
 - Add documented media library mount examples for common NAS layouts.
+- Revisit `podSecurityContext.supplementalGroups` and confirm whether Jellyfin should keep both `1010` and `1003` or use a single group.
 
 ## References
 
