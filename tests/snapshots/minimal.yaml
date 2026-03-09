@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.1
+    helm.sh/chart: jellyfin-0.0.2
   annotations:
     description: Jellyfin media center service account
 automountServiceAccountToken: false
@@ -28,7 +28,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.1
+    helm.sh/chart: jellyfin-0.0.2
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -51,7 +51,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.1
+    helm.sh/chart: jellyfin-0.0.2
   annotations:
     description: Jellyfin HTTP service
 spec:
@@ -77,7 +77,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.1
+    helm.sh/chart: jellyfin-0.0.2
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -95,7 +95,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: jellyfin
         app.kubernetes.io/version: 10.10.7
-        helm.sh/chart: jellyfin-0.0.1
+        helm.sh/chart: jellyfin-0.0.2
         app.kubernetes.io/part-of: media-center
         logging.kubernetes.io/component: media-center
         logging.kubernetes.io/service: jellyfin
@@ -115,7 +115,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: jellyfin
-          image: jellyfin/jellyfin:10.10.7@sha256:7ae36aab93ef9b6aaff02b37f8bb23df84bb2d7a3f6054ec8fc466072a648ce2
+          image: ghcr.io/runlix/jellyfin:10.11.6-stable@sha256:d4882496d6d004f3100b321606bcd94db393fb097f323aa97a0fa8506dd10750
           imagePullPolicy: Always
           ports:
             - name: http
