@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
 spec:
   podSelector:
     matchLabels:
@@ -28,6 +28,12 @@ spec:
         podSelector:
           matchLabels:
             app.kubernetes.io/name: shared-platform-gateway
+      - namespaceSelector:
+          matchLabels:
+            kubernetes.io/metadata.name: monitoring
+        podSelector:
+          matchLabels:
+            app.kubernetes.io/name: prometheus
       ports:
       - port: 15008
         protocol: TCP
@@ -76,7 +82,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
   annotations:
     description: Jellyfin media center service account
 automountServiceAccountToken: false
@@ -93,7 +99,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -116,7 +122,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
   annotations:
     description: Jellyfin HTTP service
 spec:
@@ -124,6 +130,32 @@ spec:
   ports:
     - name: http
       port: 8181
+      targetPort: http
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/instance: test-release
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin-metrics
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: service-metrics
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.4
+  annotations:
+    description: Jellyfin metrics service
+spec:
+  type: ClusterIP
+  ports:
+    - name: metrics
+      port: 8096
       targetPort: http
       protocol: TCP
   selector:
@@ -142,7 +174,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
 spec:
   replicas: 2
   revisionHistoryLimit: 3
@@ -160,7 +192,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: jellyfin
         app.kubernetes.io/version: 10.10.7
-        helm.sh/chart: jellyfin-0.0.3
+        helm.sh/chart: jellyfin-0.0.4
         app.kubernetes.io/part-of: media-center
         logging.kubernetes.io/component: media-center
         logging.kubernetes.io/service: jellyfin
@@ -231,6 +263,40 @@ spec:
             tcpSocket:
               port: http
             timeoutSeconds: 5
+          lifecycle:
+            postStart:
+              exec:
+                command:
+                - /bin/sh
+                - -c
+                - |
+                  echo "Waiting for /config/config/system.xml to enable Jellyfin metrics..."
+                  timeout=300
+                  interval=5
+                  elapsed=0
+            
+                  while [ ! -f /config/config/system.xml ]; do
+                    if [ "$elapsed" -ge "$timeout" ]; then
+                      echo "WARN: Timed out waiting for /config/config/system.xml; leaving EnableMetrics unchanged."
+                      exit 0
+                    fi
+                    sleep "$interval"
+                    elapsed=$((elapsed + interval))
+                  done
+            
+                  if grep -q '<EnableMetrics>true</EnableMetrics>' /config/config/system.xml; then
+                    echo "Jellyfin metrics already enabled in system.xml."
+                    exit 0
+                  fi
+            
+                  if grep -q '<EnableMetrics>false</EnableMetrics>' /config/config/system.xml; then
+                    sed -i 's,<EnableMetrics>false</EnableMetrics>,<EnableMetrics>true</EnableMetrics>,' /config/config/system.xml || true
+                    echo "EnableMetrics updated to true in system.xml."
+                    exit 0
+                  fi
+            
+                  echo "WARN: EnableMetrics key not found in /config/config/system.xml; leaving config unchanged."
+                  exit 0
           securityContext:
             allowPrivilegeEscalation: false
             appArmorProfile:
@@ -260,6 +326,37 @@ spec:
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
+  name: jellyfin-deny-metrics-gateway
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: authorization-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.4
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+      app.kubernetes.io/instance: test-release
+  action: DENY
+  rules:
+    - from:
+      - source:
+          principals:
+          - cluster.local/ns/istio-system/sa/shared-platform-gateway-istio
+      to:
+      - operation:
+          paths:
+          - /metrics
+          ports:
+          - "8096"
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
   name: jellyfin-ingress
   namespace: media-center
   labels:
@@ -268,7 +365,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
 spec:
   selector:
     matchLabels:
@@ -286,6 +383,39 @@ spec:
           - "8096"
 ---
 # Source: jellyfin/templates/all.yaml
+apiVersion: security.istio.io/v1beta1
+kind: AuthorizationPolicy
+metadata:
+  name: jellyfin-prometheus
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: authorization-policy
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.4
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: jellyfin
+      app.kubernetes.io/instance: test-release
+  action: ALLOW
+  rules:
+    - from:
+      - source:
+          principals:
+          - cluster.local/ns/monitoring/sa/prometheus-kube-prometheus-prometheus
+      to:
+      - operation:
+          methods:
+          - GET
+          paths:
+          - /metrics
+          ports:
+          - "8096"
+---
+# Source: jellyfin/templates/all.yaml
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
@@ -297,7 +427,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
 spec:
   host: jellyfin-http
   trafficPolicy:
@@ -315,6 +445,28 @@ spec:
       maxEjectionPercent: 50
 ---
 # Source: jellyfin/templates/all.yaml
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDashboard
+metadata:
+  name: jellyfin-jellyfin-dashboard
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: grafana-dashboard
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.4
+spec:
+  instanceSelector:
+    matchLabels:
+      app.kubernetes.io/instance: prometheus
+      app.kubernetes.io/name: grafana
+  json: |
+    {"annotations":{"list":[{"builtIn":1,"datasource":{"type":"grafana","uid":"-- Grafana --"},"enable":true,"hide":true,"iconColor":"rgba(0, 211, 255, 1)","name":"Annotations \u0026 Alerts","type":"dashboard"}]},"editable":true,"fiscalYearStartMonth":0,"graphTooltip":0,"id":null,"links":[],"liveNow":false,"panels":[{"collapsed":false,"gridPos":{"h":1,"w":24,"x":0,"y":0},"id":1000,"panels":[],"title":"Availability","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[{"options":{"0":{"color":"red","text":"Down"},"1":{"color":"green","text":"Ready"}},"type":"value"}],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"},"overrides":[]},"gridPos":{"h":5,"w":6,"x":0,"y":1},"id":1001,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"kube_deployment_status_replicas_available{deployment=\"jellyfin\", namespace=\"$namespace\"}","refId":"A"}],"title":"Available Replicas","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"red","value":null},{"color":"green","value":1}]},"unit":"short"},"overrides":[]},"gridPos":{"h":5,"w":6,"x":6,"y":1},"id":1002,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(up{namespace=\"$namespace\", service=\"jellyfin\", component=\"media-center\"})","refId":"A"}],"title":"Scrape Targets Up","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":3}]},"unit":"short"},"overrides":[]},"gridPos":{"h":5,"w":6,"x":12,"y":1},"id":1003,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\", pod=~\"$pod_regex\", container=\"jellyfin\"}[24h]))","refId":"A"}],"title":"Restarts (24h)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":0.5},{"color":"red","value":2}]},"unit":"s"},"overrides":[]},"gridPos":{"h":5,"w":6,"x":18,"y":1},"id":1004,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"max(scrape_duration_seconds{namespace=\"$namespace\", service=\"jellyfin\", component=\"media-center\"})","refId":"A"}],"title":"Scrape Duration","type":"stat"},{"collapsed":false,"gridPos":{"h":1,"w":24,"x":0,"y":6},"id":2000,"panels":[],"title":"Native Service Metrics","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"reqps"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":0,"y":7},"id":2001,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"10.0.0","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(http_requests_received_total{namespace=\"$namespace\", service=\"jellyfin\", component=\"media-center\"}[5m]))","legendFormat":"Native HTTP Request Rate","refId":"A"}],"title":"Native Request Rate","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"s"},"overrides":[]},"gridPos":{"h":8,"w":12,"x":12,"y":7},"id":2002,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"10.0.0","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"$namespace\", service=\"jellyfin\", component=\"media-center\"}[5m])) by (le))","legendFormat":"Native p95 latency","refId":"A"}],"title":"Native p95 Latency","type":"timeseries"},{"collapsed":false,"gridPos":{"h":1,"w":24,"x":0,"y":15},"id":3000,"panels":[],"title":"Mesh and Platform","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"reqps"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":0,"y":16},"id":3001,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"10.0.0","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(istio_requests_total{destination_service_name=\"jellyfin-http\", destination_service_namespace=\"$namespace\"}[5m]))","legendFormat":"Istio Request Rate","refId":"A"}],"title":"Istio Request Rate","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"palette-classic"},"custom":{"axisBorderShow":false,"axisCenteredZero":false,"axisColorMode":"text","axisLabel":"","axisPlacement":"auto","barAlignment":0,"drawStyle":"line","fillOpacity":10,"gradientMode":"none","hideFrom":{"legend":false,"tooltip":false,"viz":false},"insertNulls":false,"lineInterpolation":"linear","lineWidth":1,"pointSize":5,"scaleDistribution":{"type":"linear"},"showPoints":"never","spanNulls":false,"stacking":{"group":"A","mode":"none"},"thresholdsStyle":{"mode":"off"}},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null}]},"unit":"ms"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":8,"y":16},"id":3002,"options":{"legend":{"calcs":["last","max","mean"],"displayMode":"table","placement":"bottom","showLegend":true},"tooltip":{"mode":"multi","sort":"none"}},"pluginVersion":"10.0.0","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{destination_service_name=\"jellyfin-http\", destination_service_namespace=\"$namespace\"}[5m])) by (le))","legendFormat":"Istio p95 latency","refId":"A"}],"title":"Istio p95 Latency","type":"timeseries"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":2}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":8,"w":8,"x":16,"y":16},"id":3003,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(sum(rate(istio_requests_total{destination_service_name=\"jellyfin-http\", destination_service_namespace=\"$namespace\", response_code=~\"5..\"}[5m])) / sum(rate(istio_requests_total{destination_service_name=\"jellyfin-http\", destination_service_namespace=\"$namespace\"}[5m]))) * 100","refId":"A"}],"title":"Istio 5xx Rate","type":"stat"},{"collapsed":false,"gridPos":{"h":1,"w":24,"x":0,"y":24},"id":4000,"panels":[],"title":"Resources","type":"row"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"max":100,"min":0,"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":85}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":7,"w":6,"x":0,"y":25},"id":4001,"options":{"displayMode":"gradient","minVizHeight":10,"minVizWidth":0,"orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showThresholdLabels":false,"showThresholdMarkers":true,"sizing":"auto","text":{}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container=\"jellyfin\", pod=~\"$pod_regex\"}[5m])) / sum(kube_pod_container_resource_limits{resource=\"cpu\", namespace=\"$namespace\", container=\"jellyfin\", pod=~\"$pod_regex\"}) * 100","refId":"A"}],"title":"CPU Usage","type":"gauge"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"max":100,"min":0,"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":85}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":7,"w":6,"x":6,"y":25},"id":4002,"options":{"displayMode":"gradient","minVizHeight":10,"minVizWidth":0,"orientation":"auto","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showThresholdLabels":false,"showThresholdMarkers":true,"sizing":"auto","text":{}},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(container_memory_working_set_bytes{namespace=\"$namespace\", container=\"jellyfin\", pod=~\"$pod_regex\"}) / sum(kube_pod_container_resource_limits{resource=\"memory\", namespace=\"$namespace\", container=\"jellyfin\", pod=~\"$pod_regex\"}) * 100","refId":"A"}],"title":"Memory Usage","type":"gauge"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":1},{"color":"red","value":3}]},"unit":"short"},"overrides":[]},"gridPos":{"h":7,"w":6,"x":12,"y":25},"id":4003,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"sum(increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\", pod=~\"$pod_regex\", container=\"jellyfin\"}[1h]))","refId":"A"}],"title":"Restarts (1h)","type":"stat"},{"datasource":{"name":"Prometheus","type":"prometheus"},"fieldConfig":{"defaults":{"color":{"mode":"thresholds"},"mappings":[],"max":100,"min":0,"thresholds":{"mode":"absolute","steps":[{"color":"green","value":null},{"color":"yellow","value":70},{"color":"red","value":85}]},"unit":"percent"},"overrides":[]},"gridPos":{"h":7,"w":6,"x":18,"y":25},"id":4004,"options":{"colorMode":"value","graphMode":"area","justifyMode":"auto","orientation":"auto","percentChangeColorMode":"standard","reduceOptions":{"calcs":["lastNotNull"],"fields":"","values":false},"showPercentChange":false,"textMode":"auto","wideLayout":true},"pluginVersion":"11.1.3","targets":[{"datasource":{"name":"Prometheus","type":"prometheus"},"expr":"(kubelet_volume_stats_used_bytes{persistentvolumeclaim=\"jellyfin-config\", namespace=\"$namespace\"} / kubelet_volume_stats_capacity_bytes{persistentvolumeclaim=\"jellyfin-config\", namespace=\"$namespace\"}) * 100","refId":"A"}],"title":"Config PVC Usage","type":"stat"}],"refresh":"30s","schemaVersion":39,"tags":["jellyfin","media-center","monitoring","native-metrics","platform-metrics"],"templating":{"list":[{"hide":2,"name":"namespace","query":"media-center","skipUrlSync":false,"type":"constant"},{"hide":2,"name":"pod_regex","query":"jellyfin-.*","skipUrlSync":false,"type":"constant"}]},"time":{"from":"now-6h","to":"now"},"timepicker":{},"timezone":"","title":"Jellyfin Dashboard","uid":"jellyfin-media-center","version":1,"weekStart":""}
+  allowCrossNamespaceImport: true
+---
+# Source: jellyfin/templates/all.yaml
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -326,7 +478,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -360,7 +512,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.3
+    helm.sh/chart: jellyfin-0.0.4
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -380,3 +532,302 @@ spec:
       - path:
           type: PathPrefix
           value: /
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: jellyfin
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: prometheus-rule
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.4
+spec:
+  groups:
+    - name: jellyfin.rules
+      rules:
+        - alert: JellyfinMetricsTargetDown
+          annotations:
+            description: Prometheus failed to scrape Jellyfin metrics for more than 5 minutes.
+            summary: Jellyfin metrics target is down
+          expr: up{service="jellyfin", component="media-center", namespace="media-center"}
+            < 1
+          for: 5m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: critical
+            source: native-metrics
+        - alert: JellyfinMetricsScrapeSlow
+          annotations:
+            description: Jellyfin scrape duration exceeded 2 seconds for more than 10 minutes
+              (max={{ $value }}s).
+            summary: Jellyfin metrics scrape is slow
+          expr: max_over_time(scrape_duration_seconds{service="jellyfin", component="media-center",
+            namespace="media-center"}[10m]) > 2
+          for: 10m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: warning
+            source: native-metrics
+        - alert: JellyfinNativeHttp5xxRateHigh
+          annotations:
+            description: Jellyfin native HTTP 5xx response rate exceeded 2% for more than
+              10 minutes.
+            summary: Jellyfin native HTTP 5xx rate is high
+          expr: |
+            (
+              (
+                sum(rate(http_requests_received_total{service="jellyfin", component="media-center", namespace="media-center", code=~"5.."}[5m]))
+                /
+                sum(rate(http_requests_received_total{service="jellyfin", component="media-center", namespace="media-center"}[5m]))
+              ) * 100 > 2
+            )
+            and
+            sum(rate(http_requests_received_total{service="jellyfin", component="media-center", namespace="media-center"}[5m])) > 0.1
+          for: 10m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: warning
+            source: native-metrics
+        - alert: JellyfinNativeHttpP95LatencyHigh
+          annotations:
+            description: Jellyfin native HTTP p95 latency is above 1.5 seconds for more than
+              10 minutes (value={{ $value }}s).
+            summary: Jellyfin native HTTP p95 latency is high
+          expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="jellyfin",
+            component="media-center", namespace="media-center"}[5m])) by (le)) > 1.5
+          for: 10m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: warning
+            source: native-metrics
+        - alert: JellyfinDeploymentUnavailable
+          annotations:
+            description: No Jellyfin replicas are available for more than 5 minutes.
+            summary: Jellyfin deployment is unavailable
+          expr: kube_deployment_status_replicas_available{deployment="jellyfin", namespace="media-center"}
+            < 1
+          for: 5m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: critical
+        - alert: JellyfinContainerRestartsHigh
+          annotations:
+            description: Jellyfin container in pod {{ $labels.pod }} restarted more than 2
+              times in the last hour.
+            summary: Jellyfin container restarting frequently
+          expr: increase(kube_pod_container_status_restarts_total{namespace="media-center",
+            pod=~"jellyfin-.*", container="jellyfin"}[1h]) > 2
+          for: 0m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: warning
+        - alert: JellyfinHighCPUUtilization
+          annotations:
+            description: Jellyfin CPU usage is above 80% of requested CPU for more than 10
+              minutes (value={{ $value }}%).
+            summary: Jellyfin CPU utilization is high
+          expr: |
+            (
+              sum(rate(container_cpu_usage_seconds_total{namespace="media-center", pod=~"jellyfin-.*", container="jellyfin"}[5m]))
+              /
+              sum(kube_pod_container_resource_requests{namespace="media-center", pod=~"jellyfin-.*", container="jellyfin", resource="cpu"})
+            ) * 100 > 80
+          for: 10m
+          labels:
+            component: media-center
+            resource: cpu
+            service: jellyfin
+            severity: warning
+        - alert: JellyfinHighMemoryUtilization
+          annotations:
+            description: Jellyfin memory working set is above 85% of memory limit for more
+              than 10 minutes (value={{ $value }}%).
+            summary: Jellyfin memory utilization is high
+          expr: |
+            (
+              max(container_memory_working_set_bytes{namespace="media-center", pod=~"jellyfin-.*", container="jellyfin"})
+              /
+              max(kube_pod_container_resource_limits{namespace="media-center", pod=~"jellyfin-.*", container="jellyfin", resource="memory"})
+            ) * 100 > 85
+          for: 10m
+          labels:
+            component: media-center
+            resource: memory
+            service: jellyfin
+            severity: warning
+        - alert: JellyfinConfigPVCHighUsage
+          annotations:
+            description: Jellyfin config PVC usage has exceeded 85% for more than 15 minutes
+              (value={{ $value }}%).
+            summary: Jellyfin config PVC usage is high
+          expr: |
+            (
+              kubelet_volume_stats_used_bytes{persistentvolumeclaim="jellyfin-config", namespace="media-center"}
+              /
+              kubelet_volume_stats_capacity_bytes{persistentvolumeclaim="jellyfin-config", namespace="media-center"}
+            ) * 100 > 85
+          for: 15m
+          labels:
+            component: media-center
+            resource: storage
+            service: jellyfin
+            severity: warning
+        - alert: JellyfinConfigPVCInodesHighUsage
+          annotations:
+            description: Jellyfin config PVC inode usage has exceeded 85% for more than 15
+              minutes (value={{ $value }}%).
+            summary: Jellyfin config PVC inode usage is high
+          expr: |
+            (
+              kubelet_volume_stats_inodes_used{persistentvolumeclaim="jellyfin-config", namespace="media-center"}
+              /
+              kubelet_volume_stats_inodes{persistentvolumeclaim="jellyfin-config", namespace="media-center"}
+            ) * 100 > 85
+          for: 15m
+          labels:
+            component: media-center
+            resource: storage
+            service: jellyfin
+            severity: warning
+        - alert: JellyfinIstioHigh5xxRate
+          annotations:
+            description: Jellyfin 5xx response rate exceeded 2% for more than 10 minutes.
+            summary: Jellyfin Istio 5xx error rate is high
+          expr: |
+            (
+              (
+                sum(rate(istio_requests_total{destination_service_name="jellyfin-http", destination_service_namespace="media-center", response_code=~"5.."}[5m]))
+                /
+                sum(rate(istio_requests_total{destination_service_name="jellyfin-http", destination_service_namespace="media-center"}[5m]))
+              ) * 100 > 2
+            )
+            and
+            sum(rate(istio_requests_total{destination_service_name="jellyfin-http", destination_service_namespace="media-center"}[5m])) > 0.1
+          for: 10m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: warning
+            traffic: istio
+        - alert: JellyfinIstioHighP95Latency
+          annotations:
+            description: Jellyfin p95 request latency is above 750ms for more than 10 minutes
+              (value={{ $value }}ms).
+            summary: Jellyfin Istio p95 latency is high
+          expr: histogram_quantile(0.95, sum(rate(istio_request_duration_milliseconds_bucket{destination_service_name="jellyfin-http",
+            destination_service_namespace="media-center"}[5m])) by (le)) > 750
+          for: 10m
+          labels:
+            component: media-center
+            service: jellyfin
+            severity: warning
+            traffic: istio
+        - alert: JellyfinAuthorizationPolicyDenials
+          annotations:
+            description: Jellyfin is experiencing authorization policy denials (403/SEC).
+            summary: Jellyfin authorization policy denials detected
+          expr: |
+            sum(
+              rate(istio_requests_total{
+                destination_workload="jellyfin",
+                destination_workload_namespace="media-center",
+                destination_service_name="jellyfin-http",
+                request_protocol="http",
+                response_code="403",
+                response_flags="SEC"
+              }[5m])
+            ) > 0
+          for: 2m
+          labels:
+            component: media-center
+            security: authorization
+            service: jellyfin
+            severity: warning
+        - alert: JellyfinHighAuthorizationDenialRate
+          annotations:
+            description: Jellyfin has a high authorization denial rate ({{ $value }}% of requests
+              denied).
+            summary: Jellyfin high authorization denial rate
+          expr: |
+            (
+              sum(
+                rate(istio_requests_total{
+                  destination_workload="jellyfin",
+                  destination_workload_namespace="media-center",
+                  destination_service_name="jellyfin-http",
+                  request_protocol="http",
+                  response_code="403",
+                  response_flags="SEC"
+                }[5m])
+              )
+              /
+              sum(
+                rate(istio_requests_total{
+                  destination_workload="jellyfin",
+                  destination_workload_namespace="media-center",
+                  destination_service_name="jellyfin-http",
+                  request_protocol="http"
+                }[5m])
+              )
+            ) * 100 > 5
+          for: 5m
+          labels:
+            component: media-center
+            security: authorization
+            service: jellyfin
+            severity: critical
+---
+# Source: jellyfin/templates/all.yaml
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: jellyfin
+  namespace: media-center
+  labels:
+    app.kubernetes.io/component: servicemonitor
+    app.kubernetes.io/instance: test-release
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: jellyfin
+    app.kubernetes.io/version: 10.10.7
+    helm.sh/chart: jellyfin-0.0.4
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: service-metrics
+      app.kubernetes.io/instance: jellyfin
+      app.kubernetes.io/name: jellyfin
+  namespaceSelector:
+    matchNames:
+    - media-center
+  endpoints:
+    - port: metrics
+      interval: 30s
+      scrapeTimeout: 10s
+      path: /metrics
+      relabelings:
+        - action: replace
+          sourceLabels:
+          - __meta_kubernetes_namespace
+          targetLabel: namespace
+        - action: replace
+          sourceLabels:
+          - __meta_kubernetes_pod_name
+          targetLabel: instance
+      metricRelabelings:
+        - action: replace
+          replacement: jellyfin
+          targetLabel: service
+        - action: replace
+          replacement: media-center
+          targetLabel: component

@@ -82,14 +82,24 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 - Health probes: TCP socket probe on port `8096`
 - Default writable mounts: `/config`, `/cache`, and `/tmp`
 
+## Observability
+
+- `metrics.enabled=true` by default and renders:
+  - `ServiceMonitor` (native Jellyfin `/metrics` endpoint)
+  - `PrometheusRule` (native + platform alerts)
+  - `GrafanaDashboard` (`dashboards/app.json`)
+- Native Jellyfin metrics are enabled by the chart via container lifecycle hook that updates `EnableMetrics=true` in `/config/config/system.xml` when needed.
+- Dashboard and alerts intentionally combine:
+  - Jellyfin native Prometheus metrics (`/metrics`)
+  - Platform metrics (Istio, cAdvisor, kube-state-metrics, kubelet)
+- `/metrics` is restricted from gateway traffic via Istio `DENY` policy and allowed for Prometheus scraping via dedicated Istio `ALLOW` policy.
+
 ## Known Limitations
 
 - Media library mounts are intentionally left to user overrides (`persistence.volumes` + matching `workload.spec.containers.jellyfin.volumeMounts`) to keep the base chart simple.
-- Metrics integration is intentionally deferred.
 
 ## TODOs
 
-- Implement Jellyfin metrics stack (exporter + `ServiceMonitor` + `PrometheusRule` + dashboard wiring).
 - Add documented media library mount examples for common NAS layouts.
 - Revisit `podSecurityContext.supplementalGroups` and confirm whether Jellyfin should keep both `1010` and `1003` or use a single group.
 

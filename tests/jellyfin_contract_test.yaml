@@ -5,13 +5,36 @@ tests:
   - it: renders expected default resource set and ingress host
     asserts:
       - hasDocuments:
-          count: 9
+          count: 15
       - documentSelector:
           path: metadata.name
           value: jellyfin-route
         equal:
           path: spec.hostnames[0]
           value: jellyfin-k8s.orhayoun.com
+      - documentSelector:
+          path: kind
+          value: PrometheusRule
+        exists:
+          path: metadata.name
+      - documentSelector:
+          path: kind
+          value: GrafanaDashboard
+        equal:
+          path: spec.instanceSelector.matchLabels["app.kubernetes.io/instance"]
+          value: prometheus
+      - documentSelector:
+          path: kind
+          value: GrafanaDashboard
+        equal:
+          path: spec.instanceSelector.matchLabels["app.kubernetes.io/name"]
+          value: grafana
+      - documentSelector:
+          path: kind
+          value: ServiceMonitor
+        equal:
+          path: spec.endpoints[0].port
+          value: metrics
       - documentSelector:
           path: kind
           value: DestinationRule
@@ -47,6 +70,12 @@ tests:
           value: 20031
       - documentSelector:
           path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.containers[0].lifecycle.postStart.exec.command[0]
+          value: /bin/sh
+      - documentSelector:
+          path: kind
           value: PersistentVolumeClaim
         equal:
           path: metadata.name
@@ -67,7 +96,25 @@ tests:
             enabled: false
     asserts:
       - hasDocuments:
-          count: 8
+          count: 14
+
+  - it: disables serviceMonitor when explicitly turned off
+    set:
+      metrics:
+        serviceMonitor:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 14
+
+  - it: disables grafana dashboard resources when grafana is disabled
+    set:
+      metrics:
+        grafana:
+          enabled: false
+    asserts:
+      - hasDocuments:
+          count: 14
 
   - it: applies httproute host override
     set:
@@ -121,6 +168,12 @@ tests:
         equal:
           path: spec.ports[0].port
           value: 8096
+      - documentSelector:
+          path: metadata.name
+          value: jellyfin-metrics
+        equal:
+          path: spec.ports[0].targetPort
+          value: http
       - documentSelector:
           path: kind
           value: Deployment
