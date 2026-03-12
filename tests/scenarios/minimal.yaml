@@ -8,5 +8,9 @@ network:
         enabled: false
   istio:
     enabled: false
+  services:
+    items:
+      metrics:
+        enabled: false
 metrics:
   enabled: false
