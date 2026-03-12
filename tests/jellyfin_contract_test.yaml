@@ -5,7 +5,7 @@ tests:
   - it: renders expected default resource set and ingress host
     asserts:
       - hasDocuments:
-          count: 14
+          count: 13
       - documentSelector:
           path: metadata.name
           value: jellyfin-route
@@ -97,7 +97,7 @@ tests:
             enabled: false
     asserts:
       - hasDocuments:
-          count: 13
+          count: 12
 
   - it: disables serviceMonitor when explicitly turned off
     set:
@@ -106,7 +106,7 @@ tests:
           enabled: false
     asserts:
       - hasDocuments:
-          count: 13
+          count: 12
 
   - it: disables grafana dashboard resources when grafana is disabled
     set:
@@ -115,7 +115,7 @@ tests:
           enabled: false
     asserts:
       - hasDocuments:
-          count: 13
+          count: 12
 
   - it: applies httproute host override
     set:

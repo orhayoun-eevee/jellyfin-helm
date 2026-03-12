@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   podSelector:
     matchLabels:
@@ -82,7 +82,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
   annotations:
     description: Jellyfin media center service account
 automountServiceAccountToken: false
@@ -99,7 +99,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -122,7 +122,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
   annotations:
     description: Jellyfin HTTP service
 spec:
@@ -148,7 +148,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   replicas: 2
   revisionHistoryLimit: 3
@@ -166,7 +166,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: jellyfin
         app.kubernetes.io/version: 10.10.7
-        helm.sh/chart: jellyfin-0.0.5
+        helm.sh/chart: jellyfin-0.0.6
         app.kubernetes.io/part-of: media-center
         logging.kubernetes.io/component: media-center
         logging.kubernetes.io/service: jellyfin
@@ -265,37 +265,6 @@ spec:
 apiVersion: security.istio.io/v1beta1
 kind: AuthorizationPolicy
 metadata:
-  name: jellyfin-deny-metrics-gateway
-  namespace: media-center
-  labels:
-    app.kubernetes.io/component: authorization-policy
-    app.kubernetes.io/instance: test-release
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: jellyfin
-    app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
-spec:
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: jellyfin
-      app.kubernetes.io/instance: test-release
-  action: DENY
-  rules:
-    - from:
-      - source:
-          principals:
-          - cluster.local/ns/istio-system/sa/shared-platform-gateway-istio
-      to:
-      - operation:
-          paths:
-          - /metrics
-          ports:
-          - "8096"
----
-# Source: jellyfin/templates/all.yaml
-apiVersion: security.istio.io/v1beta1
-kind: AuthorizationPolicy
-metadata:
   name: jellyfin-ingress
   namespace: media-center
   labels:
@@ -304,7 +273,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   selector:
     matchLabels:
@@ -333,7 +302,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   selector:
     matchLabels:
@@ -366,7 +335,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   host: jellyfin-http
   trafficPolicy:
@@ -395,7 +364,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   instanceSelector:
     matchLabels:
@@ -417,7 +386,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -451,7 +420,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -484,7 +453,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   groups:
     - name: jellyfin.rules
@@ -739,7 +708,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.5
+    helm.sh/chart: jellyfin-0.0.6
 spec:
   selector:
     matchLabels:

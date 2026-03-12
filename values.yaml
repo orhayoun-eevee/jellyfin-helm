@@ -264,7 +264,9 @@ network:
                     paths: ["/metrics"]
                     methods: ["GET"]
         deny-metrics-gateway:
-          enabled: true
+          # Disabled by default for ambient mesh compatibility.
+          # In ambient mode, ztunnel cannot enforce HTTP path matching on DENY policies.
+          enabled: false
           action: DENY
           rules:
             - from:
