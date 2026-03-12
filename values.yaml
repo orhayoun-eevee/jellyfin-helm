@@ -136,16 +136,6 @@ network:
             protocol: TCP
         annotations:
           description: "Jellyfin HTTP service"
-      metrics:
-        enabled: true
-        type: ClusterIP
-        ports:
-          metrics:
-            port: 8096
-            targetPort: http
-            protocol: TCP
-        annotations:
-          description: "Jellyfin metrics service"
 
   httpRoute:
     enabled: true
@@ -333,7 +323,7 @@ metrics:
   serviceMonitor:
     enabled: true
     port: 8096
-    portName: metrics
+    portName: http
     interval: 30s
     scrapeTimeout: 10s
     path: /metrics
@@ -342,7 +332,7 @@ metrics:
       matchLabels:
         app.kubernetes.io/name: jellyfin
         app.kubernetes.io/instance: jellyfin
-        app.kubernetes.io/component: service-metrics
+        app.kubernetes.io/component: service-http
     namespaceSelector:
       matchNames:
         - media-center

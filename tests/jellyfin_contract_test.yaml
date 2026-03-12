@@ -5,7 +5,7 @@ tests:
   - it: renders expected default resource set and ingress host
     asserts:
       - hasDocuments:
-          count: 15
+          count: 14
       - documentSelector:
           path: metadata.name
           value: jellyfin-route
@@ -34,7 +34,7 @@ tests:
           value: ServiceMonitor
         equal:
           path: spec.endpoints[0].port
-          value: metrics
+          value: http
       - documentSelector:
           path: kind
           value: DestinationRule
@@ -90,7 +90,7 @@ tests:
             enabled: false
     asserts:
       - hasDocuments:
-          count: 14
+          count: 13
 
   - it: disables serviceMonitor when explicitly turned off
     set:
@@ -99,7 +99,7 @@ tests:
           enabled: false
     asserts:
       - hasDocuments:
-          count: 14
+          count: 13
 
   - it: disables grafana dashboard resources when grafana is disabled
     set:
@@ -108,7 +108,7 @@ tests:
           enabled: false
     asserts:
       - hasDocuments:
-          count: 14
+          count: 13
 
   - it: applies httproute host override
     set:
@@ -162,12 +162,6 @@ tests:
         equal:
           path: spec.ports[0].port
           value: 8096
-      - documentSelector:
-          path: metadata.name
-          value: jellyfin-metrics
-        equal:
-          path: spec.ports[0].targetPort
-          value: http
       - documentSelector:
           path: kind
           value: Deployment

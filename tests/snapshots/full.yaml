@@ -137,32 +137,6 @@ spec:
     app.kubernetes.io/instance: test-release
 ---
 # Source: jellyfin/templates/all.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: jellyfin-metrics
-  namespace: media-center
-  labels:
-    app.kubernetes.io/component: service-metrics
-    app.kubernetes.io/instance: test-release
-    app.kubernetes.io/managed-by: Helm
-    app.kubernetes.io/name: jellyfin
-    app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.4
-  annotations:
-    description: Jellyfin metrics service
-spec:
-  type: ClusterIP
-  ports:
-    - name: metrics
-      port: 8096
-      targetPort: http
-      protocol: TCP
-  selector:
-    app.kubernetes.io/name: jellyfin
-    app.kubernetes.io/instance: test-release
----
-# Source: jellyfin/templates/all.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -770,14 +744,14 @@ metadata:
 spec:
   selector:
     matchLabels:
-      app.kubernetes.io/component: service-metrics
+      app.kubernetes.io/component: service-http
       app.kubernetes.io/instance: jellyfin
       app.kubernetes.io/name: jellyfin
   namespaceSelector:
     matchNames:
     - media-center
   endpoints:
-    - port: metrics
+    - port: http
       interval: 30s
       scrapeTimeout: 10s
       path: /metrics
