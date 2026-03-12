@@ -72,9 +72,27 @@ tests:
           path: kind
           value: Deployment
         equal:
+          path: spec.template.spec.containers[0].volumeMounts[1].mountPath
+          value: /config/data/backups
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
           path: spec.template.spec.securityContext.supplementalGroups
           value:
             - 1010
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.volumes[1].nfs.server
+          value: snorlax.orhayoun.com
+      - documentSelector:
+          path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.volumes[1].nfs.path
+          value: /mnt/vol1/media-center/jellyfin
       - documentSelector:
           path: kind
           value: PersistentVolumeClaim

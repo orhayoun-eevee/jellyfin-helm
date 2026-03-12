@@ -80,7 +80,20 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 - Image tag is pinned by digest for immutable deploys
 - Default service port: `8096`
 - Health probes: TCP socket probe on port `8096`
-- Default writable mounts: `/config`, `/cache`, and `/tmp`
+- Default writable mounts: `/config`, `/config/data/backups`, `/cache`, and `/tmp`
+
+## Backup Strategy
+
+- Backup scope for this chart is Jellyfin app-state archives only (not source media files).
+- Default backup storage is mounted at Jellyfin's native backup path: `/config/data/backups`.
+- The chart mounts `backup` NFS volume `snorlax.orhayoun.com:/mnt/vol1/media-center/jellyfin` at that path.
+- Jellyfin restore only reads archives from its backup directory, so mounting `/backup` separately is intentionally avoided.
+- Jellyfin Dashboard backup creation includes database content by design; this chart accepts that, while authoritative DB recovery remains out of scope for this chart's backup policy.
+
+### Sonarr/Radarr Comparison
+
+- `sonarr-helm` and `radarr-helm` mount dedicated `/backup` paths.
+- `jellyfin-helm` mounts storage directly where Jellyfin creates and restores backups (`/config/data/backups`) to match native behavior.
 
 ## Observability
 
@@ -99,11 +112,20 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 
 - Media library mounts are intentionally left to user overrides (`persistence.volumes` + matching `workload.spec.containers.jellyfin.volumeMounts`) to keep the base chart simple.
 - Default `workload.spec.podSecurityContext.supplementalGroups` is `1010` (eevee-download-clients). If your environment requires a different media group (for example `1003`), override it in your values.
+- In Istio ambient mode, ztunnel cannot enforce HTTP-path-aware `DENY` rules. A `DENY` policy intended only for `/metrics` can become broader than intended.
+
+## Ambient Mesh L7 Guidance
+
+If you need to enforce "deny `/metrics` from gateway, allow Prometheus only" with path-level precision:
+
+1. Move Jellyfin traffic enforcement to an L7-capable data plane (Istio waypoint for the workload).
+2. Keep the Prometheus `ALLOW` policy scoped to `/metrics`.
+3. Re-enable `network.istio.authorizationPolicy.items.deny-metrics-gateway.enabled=true` only after L7 enforcement is active and verified.
 
 ## Media Library Mount Examples
 
 Important behavior: `persistence.volumes` and `workload.spec.containers.jellyfin.volumeMounts` are list fields.
-When overriding with Helm values, lists replace defaults, so include the default `config`, `cache`, and `tmp` entries in your override.
+When overriding with Helm values, lists replace defaults, so include the default `config`, `backup`, `cache`, and `tmp` entries in your override.
 Use `readOnly: true` for media library mounts.
 
 ### Example 1: Single NAS share with subfolders
@@ -114,6 +136,10 @@ persistence:
     - name: config
       persistentVolumeClaim:
         claimName: jellyfin-config
+    - name: backup
+      nfs:
+        server: snorlax.orhayoun.com
+        path: /mnt/vol1/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi
@@ -131,6 +157,8 @@ workload:
         volumeMounts:
           - name: config
             mountPath: /config
+          - name: backup
+            mountPath: /config/data/backups
           - name: cache
             mountPath: /cache
           - name: tmp
@@ -157,6 +185,10 @@ persistence:
     - name: config
       persistentVolumeClaim:
         claimName: jellyfin-config
+    - name: backup
+      nfs:
+        server: snorlax.orhayoun.com
+        path: /mnt/vol1/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi
@@ -180,6 +212,8 @@ workload:
         volumeMounts:
           - name: config
             mountPath: /config
+          - name: backup
+            mountPath: /config/data/backups
           - name: cache
             mountPath: /cache
           - name: tmp
@@ -203,6 +237,10 @@ persistence:
     - name: config
       persistentVolumeClaim:
         claimName: jellyfin-config
+    - name: backup
+      nfs:
+        server: snorlax.orhayoun.com
+        path: /mnt/vol1/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi
@@ -220,6 +258,8 @@ workload:
         volumeMounts:
           - name: config
             mountPath: /config
+          - name: backup
+            mountPath: /config/data/backups
           - name: cache
             mountPath: /cache
           - name: tmp
@@ -238,6 +278,8 @@ workload:
 
 - https://github.com/jellyfin/jellyfin
 - https://jellyfin.org/docs/general/installation/container
+- https://jellyfin.org/docs/general/server/backups
+- https://jellyfin.org/docs/general/administration/migrate
 - `Chart.yaml`
 - `values.yaml`
 
