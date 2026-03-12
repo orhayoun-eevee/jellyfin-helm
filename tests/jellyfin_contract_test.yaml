@@ -70,12 +70,6 @@ tests:
           value: 20031
       - documentSelector:
           path: kind
-          value: Deployment
-        equal:
-          path: spec.template.spec.containers[0].lifecycle.postStart.exec.command[0]
-          value: /bin/sh
-      - documentSelector:
-          path: kind
           value: PersistentVolumeClaim
         equal:
           path: metadata.name

@@ -263,40 +263,6 @@ spec:
             tcpSocket:
               port: http
             timeoutSeconds: 5
-          lifecycle:
-            postStart:
-              exec:
-                command:
-                - /bin/sh
-                - -c
-                - |
-                  echo "Waiting for /config/config/system.xml to enable Jellyfin metrics..."
-                  timeout=300
-                  interval=5
-                  elapsed=0
-            
-                  while [ ! -f /config/config/system.xml ]; do
-                    if [ "$elapsed" -ge "$timeout" ]; then
-                      echo "WARN: Timed out waiting for /config/config/system.xml; leaving EnableMetrics unchanged."
-                      exit 0
-                    fi
-                    sleep "$interval"
-                    elapsed=$((elapsed + interval))
-                  done
-            
-                  if grep -q '<EnableMetrics>true</EnableMetrics>' /config/config/system.xml; then
-                    echo "Jellyfin metrics already enabled in system.xml."
-                    exit 0
-                  fi
-            
-                  if grep -q '<EnableMetrics>false</EnableMetrics>' /config/config/system.xml; then
-                    sed -i 's,<EnableMetrics>false</EnableMetrics>,<EnableMetrics>true</EnableMetrics>,' /config/config/system.xml || true
-                    echo "EnableMetrics updated to true in system.xml."
-                    exit 0
-                  fi
-            
-                  echo "WARN: EnableMetrics key not found in /config/config/system.xml; leaving config unchanged."
-                  exit 0
           securityContext:
             allowPrivilegeEscalation: false
             appArmorProfile:
