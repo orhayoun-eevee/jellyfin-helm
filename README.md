@@ -97,11 +97,141 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 ## Known Limitations
 
 - Media library mounts are intentionally left to user overrides (`persistence.volumes` + matching `workload.spec.containers.jellyfin.volumeMounts`) to keep the base chart simple.
+- Default `workload.spec.podSecurityContext.supplementalGroups` is `1010` (eevee-download-clients). If your environment requires a different media group (for example `1003`), override it in your values.
 
-## TODOs
+## Media Library Mount Examples
 
-- Add documented media library mount examples for common NAS layouts.
-- Revisit `podSecurityContext.supplementalGroups` and confirm whether Jellyfin should keep both `1010` and `1003` or use a single group.
+Important behavior: `persistence.volumes` and `workload.spec.containers.jellyfin.volumeMounts` are list fields.
+When overriding with Helm values, lists replace defaults, so include the default `config`, `cache`, and `tmp` entries in your override.
+Use `readOnly: true` for media library mounts.
+
+### Example 1: Single NAS share with subfolders
+
+```yaml
+persistence:
+  volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: jellyfin-config
+    - name: cache
+      emptyDir:
+        sizeLimit: 4Gi
+    - name: tmp
+      emptyDir:
+        sizeLimit: 1Gi
+    - name: media
+      persistentVolumeClaim:
+        claimName: nas-media
+
+workload:
+  spec:
+    containers:
+      jellyfin:
+        volumeMounts:
+          - name: config
+            mountPath: /config
+          - name: cache
+            mountPath: /cache
+          - name: tmp
+            mountPath: /tmp
+          - name: media
+            mountPath: /media/movies
+            subPath: Movies
+            readOnly: true
+          - name: media
+            mountPath: /media/tv
+            subPath: TV
+            readOnly: true
+          - name: media
+            mountPath: /media/music
+            subPath: Music
+            readOnly: true
+```
+
+### Example 2: Separate PVC per media library
+
+```yaml
+persistence:
+  volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: jellyfin-config
+    - name: cache
+      emptyDir:
+        sizeLimit: 4Gi
+    - name: tmp
+      emptyDir:
+        sizeLimit: 1Gi
+    - name: movies
+      persistentVolumeClaim:
+        claimName: nas-movies
+    - name: tv
+      persistentVolumeClaim:
+        claimName: nas-tv
+    - name: music
+      persistentVolumeClaim:
+        claimName: nas-music
+
+workload:
+  spec:
+    containers:
+      jellyfin:
+        volumeMounts:
+          - name: config
+            mountPath: /config
+          - name: cache
+            mountPath: /cache
+          - name: tmp
+            mountPath: /tmp
+          - name: movies
+            mountPath: /media/movies
+            readOnly: true
+          - name: tv
+            mountPath: /media/tv
+            readOnly: true
+          - name: music
+            mountPath: /media/music
+            readOnly: true
+```
+
+### Example 3: SMB/CIFS-backed PVC with subfolders
+
+```yaml
+persistence:
+  volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: jellyfin-config
+    - name: cache
+      emptyDir:
+        sizeLimit: 4Gi
+    - name: tmp
+      emptyDir:
+        sizeLimit: 1Gi
+    - name: media-cifs
+      persistentVolumeClaim:
+        claimName: nas-cifs-media
+
+workload:
+  spec:
+    containers:
+      jellyfin:
+        volumeMounts:
+          - name: config
+            mountPath: /config
+          - name: cache
+            mountPath: /cache
+          - name: tmp
+            mountPath: /tmp
+          - name: media-cifs
+            mountPath: /media/movies
+            subPath: Movies
+            readOnly: true
+          - name: media-cifs
+            mountPath: /media/tv
+            subPath: TV
+            readOnly: true
+```
 
 ## References
 

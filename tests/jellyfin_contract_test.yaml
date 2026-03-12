@@ -70,6 +70,13 @@ tests:
           value: 20031
       - documentSelector:
           path: kind
+          value: Deployment
+        equal:
+          path: spec.template.spec.securityContext.supplementalGroups
+          value:
+            - 1010
+      - documentSelector:
+          path: kind
           value: PersistentVolumeClaim
         equal:
           path: metadata.name

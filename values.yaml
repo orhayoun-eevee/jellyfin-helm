@@ -38,8 +38,7 @@ workload:
       fsGroupChangePolicy: OnRootMismatch
       runAsNonRoot: true
       supplementalGroups:
-        - 1010
-        - 1003
+        - 1010 # eevee-download-clients group
 
     containers:
       jellyfin:
@@ -298,6 +297,7 @@ network:
 # ----------------------------------------------------------------------------
 persistence:
   enabled: true
+  # Media library mount override examples (NFS/PVC/SMB) are documented in README.md.
   claims:
     config:
       size: 10Gi
@@ -611,4 +611,4 @@ podDisruptionBudget:
   minAvailable: 1
   unhealthyPodEvictionPolicy: AlwaysAllow
 
-# TODO: Revisit backup volume strategy and add media-library mount examples if needed.
+# TODO: Revisit backup volume strategy.
