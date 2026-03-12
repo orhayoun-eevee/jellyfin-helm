@@ -92,7 +92,8 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 - Dashboard and alerts intentionally combine:
   - Jellyfin native Prometheus metrics (`/metrics`)
   - Platform metrics (Istio, cAdvisor, kube-state-metrics, kubelet)
-- `/metrics` is restricted from gateway traffic via Istio `DENY` policy and allowed for Prometheus scraping via dedicated Istio `ALLOW` policy.
+- Prometheus scrape access is allowed via dedicated Istio `ALLOW` policy.
+- `deny-metrics-gateway` is disabled by default for ambient mesh compatibility. Enable it only in environments where HTTP-path-aware `DENY` enforcement is available.
 
 ## Known Limitations
 
