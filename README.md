@@ -86,7 +86,7 @@ This updates `Chart.yaml`, refreshes `Chart.lock`, and regenerates snapshots.
 
 - Backup scope for this chart is Jellyfin app-state archives only (not source media files).
 - Default backup storage is mounted at Jellyfin's native backup path: `/config/data/backups`.
-- The chart mounts `backup` NFS volume `snorlax.orhayoun.com:/mnt/vol1/media-center/jellyfin` at that path.
+- The chart mounts `backup` NFS volume `snorlax.orhayoun.com:/mnt/vol1/k8s/media-center/jellyfin` at that path.
 - Jellyfin restore only reads archives from its backup directory, so mounting `/backup` separately is intentionally avoided.
 - Jellyfin Dashboard backup creation includes database content by design; this chart accepts that, while authoritative DB recovery remains out of scope for this chart's backup policy.
 
@@ -139,7 +139,7 @@ persistence:
     - name: backup
       nfs:
         server: snorlax.orhayoun.com
-        path: /mnt/vol1/media-center/jellyfin
+        path: /mnt/vol1/k8s/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi
@@ -188,7 +188,7 @@ persistence:
     - name: backup
       nfs:
         server: snorlax.orhayoun.com
-        path: /mnt/vol1/media-center/jellyfin
+        path: /mnt/vol1/k8s/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi
@@ -240,7 +240,7 @@ persistence:
     - name: backup
       nfs:
         server: snorlax.orhayoun.com
-        path: /mnt/vol1/media-center/jellyfin
+        path: /mnt/vol1/k8s/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi

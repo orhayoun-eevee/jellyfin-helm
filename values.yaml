@@ -316,7 +316,7 @@ persistence:
     - name: backup
       nfs:
         server: snorlax.orhayoun.com
-        path: /mnt/vol1/media-center/jellyfin
+        path: /mnt/vol1/k8s/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi

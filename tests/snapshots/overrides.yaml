@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   podSelector:
     matchLabels:
@@ -82,7 +82,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
   annotations:
     description: Jellyfin media center service account
 automountServiceAccountToken: false
@@ -99,7 +99,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -122,7 +122,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
   annotations:
     description: Jellyfin HTTP service
 spec:
@@ -148,7 +148,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   replicas: 2
   revisionHistoryLimit: 3
@@ -166,7 +166,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: jellyfin
         app.kubernetes.io/version: 10.10.7
-        helm.sh/chart: jellyfin-0.0.7
+        helm.sh/chart: jellyfin-0.0.8
         app.kubernetes.io/part-of: media-center
         logging.kubernetes.io/component: media-center
         logging.kubernetes.io/service: jellyfin
@@ -258,7 +258,7 @@ spec:
             claimName: jellyfin-config
         - name: backup
           nfs:
-            path: /mnt/vol1/media-center/jellyfin
+            path: /mnt/vol1/k8s/media-center/jellyfin
             server: snorlax.orhayoun.com
         - emptyDir:
             sizeLimit: 4Gi
@@ -279,7 +279,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   selector:
     matchLabels:
@@ -308,7 +308,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   selector:
     matchLabels:
@@ -341,7 +341,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   host: jellyfin-http
   trafficPolicy:
@@ -370,7 +370,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   instanceSelector:
     matchLabels:
@@ -392,7 +392,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -426,7 +426,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -459,7 +459,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   groups:
     - name: jellyfin.rules
@@ -714,7 +714,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.7
+    helm.sh/chart: jellyfin-0.0.8
 spec:
   selector:
     matchLabels:

@@ -92,7 +92,7 @@ tests:
           value: Deployment
         equal:
           path: spec.template.spec.volumes[1].nfs.path
-          value: /mnt/vol1/media-center/jellyfin
+          value: /mnt/vol1/k8s/media-center/jellyfin
       - documentSelector:
           path: kind
           value: PersistentVolumeClaim
