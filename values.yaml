@@ -60,6 +60,8 @@ workload:
         volumeMounts:
           - name: config
             mountPath: /config
+          - name: backup
+            mountPath: /config/data/backups
           - name: cache
             mountPath: /cache
           - name: tmp
@@ -266,6 +268,7 @@ network:
         deny-metrics-gateway:
           # Disabled by default for ambient mesh compatibility.
           # In ambient mode, ztunnel cannot enforce HTTP path matching on DENY policies.
+          # Enable only when Jellyfin traffic is enforced by an L7-capable plane (for example, waypoint).
           enabled: false
           action: DENY
           rules:
@@ -310,6 +313,10 @@ persistence:
     - name: config
       persistentVolumeClaim:
         claimName: jellyfin-config
+    - name: backup
+      nfs:
+        server: snorlax.orhayoun.com
+        path: /mnt/vol1/media-center/jellyfin
     - name: cache
       emptyDir:
         sizeLimit: 4Gi
@@ -613,4 +620,8 @@ podDisruptionBudget:
   minAvailable: 1
   unhealthyPodEvictionPolicy: AlwaysAllow
 
-# TODO: Revisit backup volume strategy.
+# Backup strategy:
+# - Jellyfin creates and restores archives from <DataPath>/backups.
+# - In this chart, DataPath is under /config, so the native backup path is /config/data/backups.
+# - The default NFS "backup" volume is mounted directly at /config/data/backups.
+# - Scope intentionally excludes source media content; this mount is for Jellyfin app-state archives.

@@ -128,6 +128,8 @@ spec:
           volumeMounts:
             - mountPath: /config
               name: config
+            - mountPath: /config/data/backups
+              name: backup
             - mountPath: /cache
               name: cache
             - mountPath: /tmp
@@ -183,6 +185,10 @@ spec:
         - name: config
           persistentVolumeClaim:
             claimName: jellyfin-config
+        - name: backup
+          nfs:
+            path: /mnt/vol1/media-center/jellyfin
+            server: snorlax.orhayoun.com
         - emptyDir:
             sizeLimit: 4Gi
           name: cache
