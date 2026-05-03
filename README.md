@@ -1,6 +1,6 @@
 # Jellyfin Helm Chart
 
-This chart deploys Jellyfin using the shared dependency `lib-chart` (`0.0.13`).
+This chart deploys Jellyfin using the shared dependency `lib-chart` (`0.0.14`).
 
 ## Installation
 
@@ -10,7 +10,7 @@ helm install jellyfin . --namespace media-center
 
 ## Dependencies
 
-- `lib-chart` (`0.0.13`) from `oci://ghcr.io/orhayoun-eevee`
+- `lib-chart` (`0.0.14`) from `oci://ghcr.io/orhayoun-eevee`
 
 Update dependencies from chart root:
 
