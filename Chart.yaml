@@ -2,7 +2,7 @@ apiVersion: v2
 name: jellyfin
 description: A Helm chart for Jellyfin using lib-chart
 type: application
-version: 0.0.8
+version: 0.0.9
 appVersion: "10.10.7"
 keywords:
   - jellyfin
@@ -10,7 +10,7 @@ keywords:
   - streaming
 dependencies:
   - name: lib-chart
-    version: "0.0.13"
+    version: "0.0.14"
     repository: "oci://ghcr.io/orhayoun-eevee"
 maintainers:
   - name: Jellyfin Team
