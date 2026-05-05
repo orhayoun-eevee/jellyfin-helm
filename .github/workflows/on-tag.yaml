@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   publish-chart:
-    uses: orhayoun-eevee/build-workflow/.github/workflows/release-chart.yaml@v0.1.27
+    uses: orhayoun-eevee/build-workflow/.github/workflows/release-chart.yaml@v0.1.28
     with:
       chart_path: .
       release_environment: production

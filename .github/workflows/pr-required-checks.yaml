@@ -33,7 +33,7 @@ jobs:
     permissions:
       contents: read
       packages: read
-    uses: orhayoun-eevee/build-workflow/.github/workflows/pr-required-checks-chart.yaml@v0.1.27
+    uses: orhayoun-eevee/build-workflow/.github/workflows/pr-required-checks-chart.yaml@v0.1.28
     with:
       chart_kind: app
     secrets:
