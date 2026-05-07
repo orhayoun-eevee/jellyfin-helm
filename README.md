@@ -298,4 +298,4 @@ Recommended contexts:
 - `PR Required Checks / ci-required / ci-required (pull_request)`
 - `PR Required Checks / ci-required / ci-required (merge_group)`
 
-For Renovate PRs that change `values.yaml`, `.github/workflows/renovate-snapshot-update.yaml` runs `make snapshot-update` and commits updated `tests/snapshots/*` back to the PR branch so strict snapshot checks remain enforced.
+For same-repo Renovate PRs that change render inputs such as `Chart.yaml`, `Chart.lock`, `values.yaml`, `templates/**`, `charts/**`, or `tests/scenarios/**`, `.github/workflows/renovate-snapshot-update.yaml` runs `make snapshot-update` and writes updated `tests/snapshots/*` back to the same PR branch so strict snapshot checks remain enforced without opening a second PR.

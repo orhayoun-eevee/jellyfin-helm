@@ -3,22 +3,28 @@ name: Renovate Snapshot Update
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches:
-      - main
+    branches: [main]
     paths:
+      # Keep the trigger on render inputs only. `tests/snapshots/**` stays out
+      # of scope so the bot does not retrigger itself after committing updates.
+      - "Chart.yaml"
+      - "Chart.lock"
       - "values.yaml"
+      - "templates/**"
+      - "charts/**"
+      - "tests/scenarios/**"
 
 permissions:
   contents: write
   packages: read
 
 concurrency:
-  group: renovate-snapshot-update-${{ github.workflow }}-${{ github.ref }}
+  group: caller-renovate-snapshot-update-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   update-snapshots:
-    if: github.actor == 'renovate[bot]' && github.event.pull_request.user.login == 'renovate[bot]' && github.event.pull_request.head.repo.full_name == github.repository
+    if: github.event.pull_request.head.repo.full_name == github.repository
     uses: orhayoun-eevee/build-workflow/.github/workflows/renovate-snapshot-update.yaml@v0.1.28
     with:
       snapshots_dir: tests/snapshots
