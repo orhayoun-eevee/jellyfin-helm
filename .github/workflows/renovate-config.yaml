@@ -21,4 +21,4 @@ concurrency:
 
 jobs:
   validate:
-    uses: orhayoun-eevee/build-workflow/.github/workflows/renovate-config.yaml@v0.1.28
+    uses: orhayoun-eevee/build-workflow/.github/workflows/renovate-config.yaml@v0.1.29
