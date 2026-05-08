@@ -45,7 +45,7 @@ workload:
         enabled: true
         image:
           repository: ghcr.io/runlix/jellyfin
-          tag: "10.11.6-stable@sha256:d4882496d6d004f3100b321606bcd94db393fb097f323aa97a0fa8506dd10750"
+          tag: "10.11.6-stable@sha256:0f795f8e86c24f74af2006ec3ee216cf994ea51c5dc5b467836086043a072434"
           pullPolicy: Always
 
         env:
