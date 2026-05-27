@@ -1,5 +1,5 @@
 # Default values for jellyfin
-# Uses lib-chart workload model (0.0.14)
+# Uses lib-chart workload model (0.0.15)
 
 # ----------------------------------------------------------------------------
 # Global Configuration
