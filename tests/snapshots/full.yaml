@@ -11,7 +11,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   podSelector:
     matchLabels:
@@ -82,7 +82,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
   annotations:
     description: Jellyfin media center service account
 automountServiceAccountToken: false
@@ -99,7 +99,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
   annotations:
     helm.sh/resource-policy: keep
 spec:
@@ -122,7 +122,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
   annotations:
     description: Jellyfin HTTP service
 spec:
@@ -148,7 +148,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   replicas: 1
   revisionHistoryLimit: 3
@@ -166,7 +166,7 @@ spec:
         app.kubernetes.io/managed-by: Helm
         app.kubernetes.io/name: jellyfin
         app.kubernetes.io/version: 10.10.7
-        helm.sh/chart: jellyfin-0.0.11
+        helm.sh/chart: jellyfin-0.0.12
         app.kubernetes.io/part-of: media-center
         logging.kubernetes.io/component: media-center
         logging.kubernetes.io/service: jellyfin
@@ -187,7 +187,7 @@ spec:
       enableServiceLinks: false
       containers:
         - name: jellyfin
-          image: ghcr.io/runlix/jellyfin:10.11.6-stable@sha256:0f795f8e86c24f74af2006ec3ee216cf994ea51c5dc5b467836086043a072434
+          image: ghcr.io/runlix/jellyfin:10.11.6-stable@sha256:e5e5e9512dd2b76d15741cd80b5e1954330918694a7d9285986847048cea581d
           imagePullPolicy: Always
           ports:
             - name: http
@@ -279,7 +279,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   selector:
     matchLabels:
@@ -308,7 +308,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   selector:
     matchLabels:
@@ -341,7 +341,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   host: jellyfin-http
   trafficPolicy:
@@ -370,7 +370,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   instanceSelector:
     matchLabels:
@@ -392,7 +392,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -426,7 +426,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   parentRefs:
     - name: shared-platform-gateway
@@ -459,7 +459,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   groups:
     - name: jellyfin.rules
@@ -714,7 +714,7 @@ metadata:
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/name: jellyfin
     app.kubernetes.io/version: 10.10.7
-    helm.sh/chart: jellyfin-0.0.11
+    helm.sh/chart: jellyfin-0.0.12
 spec:
   selector:
     matchLabels:
