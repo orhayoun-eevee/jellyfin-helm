@@ -9,13 +9,6 @@ on:
       - ready_for_review
     branches:
       - main
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - 'AGENTS.md'
-      - '.gitignore'
-      - '.editorconfig'
-      - 'LICENSE'
   merge_group:
     types:
       - checks_requested
@@ -33,9 +26,9 @@ jobs:
     permissions:
       contents: read
       packages: read
-    uses: orhayoun-eevee/build-workflow/.github/workflows/pr-required-checks-chart.yaml@v0.1.30
+    uses: orhayoun-eevee/build-workflow/.github/workflows/pr-required-checks-chart.yaml@v0.1.35
     with:
       chart_kind: app
     secrets:
-      gh_app_id: ${{ secrets.GHCR_AUTO_APP_ID }}
+      gh_app_client_id: ${{ secrets.GHCR_AUTO_CLIENT_ID }}
       gh_app_private_key: ${{ secrets.GHCR_AUTO_PKEY }}
