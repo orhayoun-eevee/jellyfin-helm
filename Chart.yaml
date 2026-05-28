@@ -2,8 +2,8 @@ apiVersion: v2
 name: jellyfin
 description: A Helm chart for Jellyfin using lib-chart
 type: application
-version: 0.0.10
-appVersion: "10.10.7"
+version: 0.0.11
+appVersion: "10.11.6"
 keywords:
   - jellyfin
   - media-center
